@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="A 10-minute cognitive check-in that tracks changes in memory, attention and speed against your own baseline. Not a diagnosis. Data stays on your device.">
+<meta name="theme-color" content="#EEF2F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1619" media="(prefers-color-scheme: dark)">
+<title>Mindline Check-In</title>
+<style>
+@font-face{font-family:"Atkinson Hyperlegible";src:url(fonts/atkinson-400.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url(fonts/atkinson-700.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Literata";src:url(fonts/literata-500.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Literata";src:url(fonts/literata-600.woff2) format("woff2");font-weight:600;font-display:swap}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+
+/* Layout: one calm column, large type and large tap targets for older adults; trends read as a row of personal-baseline strips */
+:root{
+  --bg:#EEF2F1; --surface:#FFFFFF; --ink:#15232A; --muted:#52636B; --line:#CFD9D7;
+  --accent:#1D6863; --accent-ink:#FFFFFF; --accent-soft:#DCEBE8;
+  --good:#2C7A4B; --warn:#9A5800; --bad:#AE2A20; --band:rgba(29,104,99,.12);
+  --display:"Literata",Georgia,"Times New Roman",serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1619; --surface:#162226; --ink:#E5EEEC; --muted:#9CAEB1; --line:#2A3A3E;
+  --accent:#5DB7AE; --accent-ink:#06211E; --accent-soft:#1B3533;
+  --good:#6DC28D; --warn:#E3A64C; --bad:#F2897E; --band:rgba(93,183,174,.16); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1619; --surface:#162226; --ink:#E5EEEC; --muted:#9CAEB1; --line:#2A3A3E;
+  --accent:#5DB7AE; --accent-ink:#06211E; --accent-soft:#1B3533;
+  --good:#6DC28D; --warn:#E3A64C; --bad:#F2897E; --band:rgba(93,183,174,.16); color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font:18px/1.55 var(--body)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 48px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-block:8px 20px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.brand{font:600 1.35rem/1.1 var(--display);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.brand svg{flex:none}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{font:700 .95rem var(--body);background:none;border:0;color:var(--muted);padding:10px 12px;border-radius:10px;cursor:pointer;min-height:44px}
+nav button[aria-current="page"]{color:var(--ink);background:var(--accent-soft)}
+h1,h2,h3{font-family:var(--display);font-weight:600;text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:2rem;line-height:1.15}
+h2{font-size:1.45rem;line-height:1.2}
+h3{font-size:1.1rem;line-height:1.25}
+p{margin:0;max-width:62ch}
+.stack{display:flex;flex-direction:column;gap:16px}
+.stack-lg{display:flex;flex-direction:column;gap:28px}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.btn{font:700 1.05rem var(--body);min-height:56px;padding:0 24px;border-radius:12px;border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-row{display:flex;flex-wrap:wrap;gap:12px}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.notice{border-left:4px solid var(--warn);padding:12px 16px;background:var(--surface);border-radius:0 10px 10px 0}
+.notice.urgent{border-color:var(--bad)}
+.notice.ok{border-color:var(--good)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.steps li{display:grid;grid-template-columns:2.2rem 1fr auto;gap:12px;align-items:baseline}
+.steps .n{font:600 1.1rem var(--display);color:var(--accent)}
+.steps .t{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.9rem}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+legend{font-weight:700;margin-bottom:6px;padding:0}
+.choices{display:flex;flex-wrap:wrap;gap:10px}
+.choice{position:relative}
+.choice input{position:absolute;opacity:0;inset:0}
+.choice span{display:inline-flex;align-items:center;min-height:52px;padding:0 20px;border:2px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;font-weight:700}
+.choice input:checked+span{border-color:var(--accent);background:var(--accent-soft)}
+.choice input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
+textarea{width:100%;box-sizing:border-box;font:1.1rem/1.5 var(--body);padding:14px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);min-height:140px;resize:vertical}
+.progress{display:flex;gap:6px}
+.progress i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.progress i.done{background:var(--accent)}
+.progress i.now{background:var(--accent);opacity:.5}
+.word-card{font:600 clamp(2.2rem,9vw,3.4rem)/1 var(--display);text-align:center;padding:56px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.rt-pad{width:100%;min-height:260px;border-radius:var(--r);border:0;font:700 1.6rem var(--body);cursor:pointer;background:var(--line);color:var(--ink);touch-action:manipulation;user-select:none}
+.rt-pad.go{background:var(--accent);color:var(--accent-ink)}
+.rt-pad.early{background:var(--warn);color:var(--surface)}
+.key{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
+.key div{display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:700;font-variant-numeric:tabular-nums}
+.key svg{width:100%;max-width:34px;height:auto}
+.target-sym{display:flex;justify-content:center;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.target-sym svg{width:96px;height:96px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pad button{min-height:64px;font:700 1.6rem var(--body);border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;touch-action:manipulation;font-variant-numeric:tabular-nums}
+.pad button:active{background:var(--accent-soft)}
+.timebar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.timebar b{display:block;height:100%;background:var(--accent);width:100%}
+.trail{position:relative;width:100%;max-width:520px;aspect-ratio:1;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);touch-action:manipulation}
+.trail svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.trail button{position:absolute;width:13%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--ink);background:var(--surface);color:var(--ink);font:700 clamp(.95rem,3.6vw,1.3rem) var(--body);cursor:pointer;padding:0}
+.trail button.hit{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.trail button.miss{background:var(--warn);border-color:var(--warn);color:var(--surface)}
+.metric{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:16px 0;border-top:1px solid var(--line)}
+.metric:first-child{border-top:0;padding-top:0}
+.metric .val{font:600 1.5rem var(--display);font-variant-numeric:tabular-nums;text-align:right}
+.metric .val small{font:400 .8rem var(--body);color:var(--muted);display:block}
+.metric svg{grid-column:1/-1;width:100%;height:auto;display:block}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;padding:3px 10px;border-radius:999px;border:1.5px solid currentColor;width:fit-content}
+.chip.usual{color:var(--good)} .chip.lower{color:var(--bad)} .chip.higher{color:var(--accent)} .chip.building{color:var(--muted)}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.sess{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.sess:first-child{border-top:0}
+.sess .btn{min-height:44px;padding:0 14px;font-size:.9rem}
+.example-tag{display:inline-block;background:var(--warn);color:var(--surface);font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:6px}
+.matched{display:flex;flex-wrap:wrap;gap:6px}
+.matched span{padding:4px 10px;border-radius:8px;background:var(--accent-soft);font-weight:700}
+.matched span.no{background:transparent;border:1.5px dashed var(--line);color:var(--muted);font-weight:400}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M2 16h6l3-8 5 14 3-8h7" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Mindline</div>
+  <nav aria-label="Main">
+    <button data-nav="home" aria-current="page">Check-in</button>
+    <button data-nav="trends">Trends</button>
+    <button data-nav="data">Your data</button>
+    <button data-nav="about">About</button>
+  </nav>
+</header>
+
+<main id="app">
+<!-- HOME -->
+<section id="v-home" class="stack-lg">
+  <div class="stack">
+    <p class="eyebrow">Personal cognitive tracking</p>
+    <h1>A 10-minute check-in that compares you with yourself</h1>
+    <p>Five short tasks measure memory, attention and speed. Repeat the check-in every month or so. Over time, Mindline shows whether your results are steady or drifting away from your own usual range.</p>
+  </div>
+  <div id="home-status"></div>
+  <div class="panel stack">
+    <h2>What you'll do</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><span>Learn a list of 10 words</span><span class="t">1 min</span></li>
+      <li><span class="n">2</span><span>Tap as soon as the panel turns green</span><span class="t">1 min</span></li>
+      <li><span class="n">3</span><span>Match symbols to numbers</span><span class="t">90 s</span></li>
+      <li><span class="n">4</span><span>Connect 1-A-2-B in order</span><span class="t">1–2 min</span></li>
+      <li><span class="n">5</span><span>Recall the words again</span><span class="t">1 min</span></li>
+    </ol>
+    <p class="muted small">Find a quiet spot, use the same device each time, and wear your glasses if you need them.</p>
+    <div class="btn-row"><button class="btn" id="start-btn">Start check-in</button></div>
+  </div>
+  <div class="notice urgent stack">
+    <p><strong>This is not a diagnosis.</strong> If you notice <strong>sudden</strong> confusion, trouble speaking, a drooping face, or weakness on one side, call 911 now. These can be signs of a stroke.</p>
+  </div>
+</section>
+
+<!-- CONTEXT -->
+<section id="v-check" class="stack-lg" hidden>
+  <div class="stack">
+    <p class="eyebrow">Before you begin</p>
+    <h1>How are you today?</h1>
+    <p>Sleep, illness and distractions affect scores. Your answers help keep an off day from looking like a change.</p>
+  </div>
+  <form id="ctx-form" class="panel stack-lg">
+    <fieldset><legend>How did you sleep last night?</legend>
+      <div class="choices"><label class="choice"><input type="radio" name="sleep" value="ok" id="sleep-ok" checked><span>About normal</span></label><label class="choice"><input type="radio" name="sleep" value="poor" id="sleep-poor"><span>Poorly</span></label></div></fieldset>
+    <fieldset><legend>Are you unwell, in pain, or unusually tired?</legend>
+      <div class="choices"><label class="choice"><input type="radio" name="unwell" value="no" id="unwell-no" checked><span>No</span></label><label class="choice"><input type="radio" name="unwell" value="yes" id="unwell-yes"><span>Yes</span></label></div></fieldset>
+    <fieldset><legend>Have you had alcohol or started a new medication in the past day?</legend>
+      <div class="choices"><label class="choice"><input type="radio" name="subst" value="no" id="subst-no" checked><span>No</span></label><label class="choice"><input type="radio" name="subst" value="yes" id="subst-yes"><span>Yes</span></label></div></fieldset>
+    <fieldset><legend>Can you work without interruption for 10 minutes?</legend>
+      <div class="choices"><label class="choice"><input type="radio" name="quiet" value="yes" id="quiet-yes" checked><span>Yes</span></label><label class="choice"><input type="radio" name="quiet" value="no" id="quiet-no"><span>Not really</span></label></div></fieldset>
+    <p id="ctx-note" class="notice" hidden>You can still do the check-in. It will be saved but left out of your baseline, so it won't skew your comparisons.</p>
+    <div class="btn-row"><button type="submit" class="btn">Begin the tasks</button><button type="button" class="btn ghost" data-nav="home">Cancel</button></div>
+  </form>
+</section>
+
+<!-- TASK RUNNER -->
+<section id="v-task" class="stack-lg" hidden>
+  <div class="progress" id="prog" aria-hidden="true"></div>
+  <div id="task-body" class="stack-lg"></div>
+  <div><button class="btn ghost" id="abort-btn" style="min-height:44px">Stop and discard this check-in</button></div>
+</section>
+
+<!-- RESULT -->
+<section id="v-result" class="stack-lg" hidden></section>
+
+<!-- TRENDS -->
+<section id="v-trends" class="stack-lg" hidden></section>
+
+<!-- DATA -->
+<section id="v-data" class="stack-lg" hidden>
+  <div class="stack">
+    <p class="eyebrow">Stays on this device</p>
+    <h1>Your data</h1>
+    <p>Results are stored only in this browser. Clearing browser data, or switching browsers or devices, removes them. Copy a backup now and then, and bring it to a doctor if you want to discuss your results.</p>
+  </div>
+  <div class="panel stack"><h2>Check-ins</h2><div id="sess-list"></div></div>
+  <div class="panel stack">
+    <h2>Back up</h2>
+    <textarea id="export-box" readonly aria-label="Backup text"></textarea>
+    <div class="btn-row"><button class="btn" id="copy-btn">Copy backup</button></div>
+    <p id="copy-msg" class="small muted" hidden></p>
+  </div>
+  <div class="panel stack">
+    <h2>Restore</h2>
+    <p class="muted small">Paste a backup, or choose a backup file you saved.</p>
+    <textarea id="import-box" aria-label="Paste backup text"></textarea>
+    <input type="file" id="import-file" accept=".json,.txt,application/json,text/plain">
+    <div class="btn-row"><button class="btn ghost" id="import-btn">Restore from backup</button></div>
+    <p id="import-msg" class="small" hidden></p>
+  </div>
+  <div class="panel stack">
+    <h2>Delete everything</h2>
+    <div class="btn-row"><button class="btn ghost" id="del-btn">Delete all check-ins</button></div>
+    <div id="del-confirm" class="notice urgent stack" hidden>
+      <p>This removes every check-in from this browser. It can't be undone unless you have a backup.</p>
+      <div class="btn-row"><button class="btn danger" id="del-yes">Delete all</button><button class="btn ghost" id="del-no">Keep my data</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="v-about" class="stack-lg" hidden>
+  <div class="stack">
+    <p class="eyebrow">How it works</p>
+    <h1>About Mindline</h1>
+  </div>
+  <div class="panel stack">
+    <h2>What it measures</h2>
+    <p>The tasks are original versions of methods widely used in cognitive research: list learning with delayed recall (memory), simple reaction time (alertness), symbol–digit coding (processing speed), and alternating trail-making (attention switching). They are not the MoCA, MMSE or any licensed clinical test.</p>
+  </div>
+  <div class="panel stack">
+    <h2>How comparisons work</h2>
+    <p>Your first check-in is treated as practice, because most people improve once they know the tasks. The next check-ins form your baseline. After two baseline check-ins, each new result is compared with your own average and spread. A result is called lower than usual when it falls well outside that spread, by a margin larger than normal day-to-day noise.</p>
+    <p>Check-ins taken while sick, short on sleep, or interrupted are saved but left out of the baseline. You can change that on the Your data page.</p>
+  </div>
+  <div class="panel stack">
+    <h2>What it can't do</h2>
+    <p>Mindline can't diagnose dementia, mild cognitive impairment, or any other condition. It has no population norms, so it can't say how you compare with others your age. A lower score can come from stress, mood, hearing or vision, a new device, or simply a bad day. A steady score doesn't rule out a problem either.</p>
+    <p>If you or people close to you have noticed changes in memory, planning, or everyday tasks, talk to a doctor whatever your scores show. A clinician can do a proper assessment.</p>
+  </div>
+  <div class="panel stack">
+    <h2>Privacy</h2>
+    <p>Mindline has no accounts, no analytics and no tracking. Your answers and scores are saved only in this browser on this device and are never sent anywhere. The page is set so it cannot contact any other server. You can delete everything at any time from the Your data page.</p>
+  </div>
+  <p class="small muted">Prototype. Not a medical device and not reviewed by clinicians.</p>
+</section>
+</main>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $ = s => document.querySelector(s);
+const STORE = 'mindline.v1';
+const WORD_LISTS = [
+  ['apple','river','candle','garden','hammer','pillow','ticket','button','forest','jacket'],
+  ['carrot','window','blanket','bridge','kettle','mirror','pencil','saddle','island','wallet'],
+  ['lemon','ladder','basket','tunnel','violin','napkin','rocket','harbor','collar','garlic'],
+  ['peach','castle','mitten','anchor','barrel','feather','lantern','pocket','meadow','spoon']
+];
+const MEASURES = [
+  {key:'recallImm', label:'Word recall, immediate', unit:'of 10 words', better:'high', floor:1.5, dp:0},
+  {key:'recallDel', label:'Word recall, delayed', unit:'of 10 words', better:'high', floor:1.5, dp:0},
+  {key:'rt', label:'Reaction time', unit:'ms, median', better:'low', floor:40, dp:0},
+  {key:'coding', label:'Symbol coding', unit:'correct in 90 s', better:'high', floor:4, dp:0},
+  {key:'trails', label:'Connect the trail', unit:'seconds', better:'low', floor:8, dp:1}
+];
+const SYMS = [
+  'M8 32 L20 8 L32 32 Z','M8 20 a12 12 0 1 0 24 0 a12 12 0 1 0 -24 0','M10 10 H30 V30 H10 Z',
+  'M20 6 V34 M6 20 H34','M9 9 L31 31 M31 9 L9 31','M20 6 L34 20 L20 34 L6 20 Z',
+  'M8 30 Q20 2 32 30','M8 12 H32 M8 20 H32 M8 28 H32','M10 30 V10 H30'
+];
+const sym = (i,size) => `<svg viewBox="0 0 40 40" ${size?`width="${size}" height="${size}"`:''} aria-hidden="true"><path d="${SYMS[i]}" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+/* ---------- storage ---------- */
+function load(){ try{ const d = JSON.parse(localStorage.getItem(STORE)||'[]'); return Array.isArray(d)?d:[]; }catch(e){ return []; } }
+let sessions = load();
+let storageOK = true;
+function save(){ try{ localStorage.setItem(STORE, JSON.stringify(sessions)); storageOK = true; }catch(e){ storageOK = false; } }
+
+/* ---------- navigation ---------- */
+let cleanup = null;
+const VIEWS = ['home','check','task','result','trends','data','about'];
+function show(v){
+  if(cleanup){ cleanup(); cleanup = null; }
+  VIEWS.forEach(n => { $('#v-'+n).hidden = n !== v; });
+  document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-current', b.dataset.nav===v ? 'page' : 'false'));
+  if(v==='home') renderHome();
+  if(v==='trends') renderTrends();
+  if(v==='data') renderData();
+  window.scrollTo(0,0);
+}
+document.addEventListener('click', e => {
+  const n = e.target.closest('[data-nav]');
+  if(n){ e.preventDefault(); show(n.dataset.nav); }
+});
+
+/* ---------- stats ---------- */
+const mean = a => a.reduce((x,y)=>x+y,0)/a.length;
+const sd = a => { if(a.length<2) return 0; const m=mean(a); return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)); };
+function sorted(list){ return list.slice().sort((a,b)=>a.date.localeCompare(b.date)); }
+// Compare session `target` against baseline built from valid sessions before it (first valid one = practice).
+function compare(list, target){
+  const valid = sorted(list).filter(s => !s.excluded);
+  const prior = valid.filter(s => s.date < target.date);
+  const baseline = prior.slice(1);
+  const out = {};
+  MEASURES.forEach(m => {
+    const v = target.scores[m.key];
+    if(baseline.length < 2){ out[m.key] = {status:'building', need: 2 - baseline.length + (prior.length===0?1:0)}; return; }
+    const vals = baseline.map(s => s.scores[m.key]);
+    const mu = mean(vals), thr = Math.max(1.5*sd(vals), m.floor);
+    const delta = m.better==='high' ? v-mu : mu-v;
+    out[m.key] = {status: delta < -thr ? 'lower' : delta > thr ? 'higher' : 'usual', mean:mu, thr};
+  });
+  return out;
+}
+const STATUS_TEXT = {usual:'Within your usual range', lower:'Lower than your usual', higher:'Better than your usual', building:'Building baseline'};
+function fmt(m,v){ return v==null ? '–' : Number(v).toFixed(m.dp); }
+function daysAgo(iso){ return Math.floor((Date.now() - new Date(iso).getTime())/864e5); }
+function niceDate(iso){ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+
+function summary(list, target){
+  const cmp = compare(list, target);
+  const keys = MEASURES.map(m=>m.key);
+  if(keys.every(k => cmp[k].status==='building')){
+    const valid = list.filter(s=>!s.excluded).length;
+    const need = Math.max(0, 3 - valid);
+    return {kind:'building', text: need>0
+      ? `Building your baseline. Complete ${need} more check-in${need>1?'s':''}, ideally a few weeks apart. Your first check-in counts as practice.`
+      : 'Building your baseline.'};
+  }
+  const lower = keys.filter(k => cmp[k].status==='lower');
+  // persistent: was the same measure also lower at the previous valid check-in?
+  const prev = sorted(list).filter(s=>!s.excluded && s.date < target.date).pop();
+  let persistent = [];
+  if(prev && lower.length){ const pc = compare(list, prev); persistent = lower.filter(k => pc[k].status==='lower'); }
+  if(lower.length===0) return {kind:'ok', text:'Your results are within your usual range.'};
+  if(lower.length===1 && persistent.length===0) return {kind:'dip', text:'One result was lower than your usual. Single dips are common and often come from sleep, stress or distraction. Try another check-in on a different day.'};
+  return {kind:'flag', text:(persistent.length ? 'A result has stayed lower than your usual across check-ins. ' : 'Several results are lower than your usual range. ') +
+    'This does not mean something is wrong, but it is worth mentioning to a doctor, especially if you or people close to you have noticed changes in memory or daily tasks. Bring a copy of your backup from the Your data page.'};
+}
+const KIND_CLASS = {building:'', ok:'ok', dip:'', flag:'urgent'};
+
+/* ---------- home ---------- */
+function renderHome(){
+  const el = $('#home-status'); el.innerHTML = '';
+  if(!storageOK) el.innerHTML += `<p class="notice urgent">This browser isn't saving data, so results will be lost when you close the page. Try a regular (non-private) window.</p>`;
+  if(!sessions.length){ el.innerHTML += `<p class="notice ok">No check-ins yet. Your first one is a practice run, so don't worry about the score.</p>`; return; }
+  const last = sorted(sessions).pop();
+  const d = daysAgo(last.date);
+  const s = summary(sessions, last);
+  el.innerHTML += `<div class="notice ${KIND_CLASS[s.kind]} stack"><p><strong>Last check-in ${d===0?'today':d===1?'yesterday':d+' days ago'}.</strong> ${s.text}</p></div>`;
+  if(d < 7) el.innerHTML += `<p class="notice">For a fair comparison, wait at least a week between check-ins. Doing them close together makes you better at the tasks themselves.</p>`;
+}
+$('#start-btn').addEventListener('click', () => { $('#ctx-form').reset(); $('#ctx-note').hidden = true; show('check'); });
+$('#ctx-form').addEventListener('change', () => {
+  const f = new FormData($('#ctx-form'));
+  $('#ctx-note').hidden = !(f.get('sleep')==='poor' || f.get('unwell')==='yes' || f.get('subst')==='yes' || f.get('quiet')==='no');
+});
+
+/* ---------- session runner ---------- */
+let run = null;
+const STEPS = ['learn','rt','coding','trails','delayed'];
+$('#ctx-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const ctx = {sleep:f.get('sleep'), unwell:f.get('unwell')==='yes', subst:f.get('subst')==='yes', quiet:f.get('quiet')==='yes'};
+  const atypical = ctx.sleep==='poor' || ctx.unwell || ctx.subst || !ctx.quiet;
+  run = {ctx, atypical, list: WORD_LISTS[sessions.length % WORD_LISTS.length], scores:{}, detail:{}};
+  show('task'); step(0);
+});
+$('#abort-btn').addEventListener('click', () => { run = null; show('home'); });
+
+function step(i){
+  if(cleanup){ cleanup(); cleanup = null; }
+  $('#prog').innerHTML = STEPS.map((_,j)=>`<i class="${j<i?'done':j===i?'now':''}"></i>`).join('');
+  const body = $('#task-body');
+  ({learn:taskLearn, rt:taskRT, coding:taskCoding, trails:taskTrails, delayed:taskDelayed})[STEPS[i]](body, () => i+1<STEPS.length ? step(i+1) : finish());
+  window.scrollTo(0,0);
+}
+function intro(body, n, title, text, btn, go){
+  body.innerHTML = `<div class="stack"><p class="eyebrow">Task ${n} of 5</p><h1>${title}</h1>${text}</div><div class="btn-row"><button class="btn" id="go">${btn}</button></div>`;
+  $('#go').addEventListener('click', go); $('#go').focus();
+}
+function scoreRecall(text, list){
+  const said = new Set(text.toLowerCase().split(/[^a-z]+/).filter(Boolean).map(w=>w.replace(/s$/,'')));
+  return list.filter(w => said.has(w) || said.has(w.replace(/s$/,'')));
+}
+function recallForm(body, n, title, text, list, cb){
+  body.innerHTML = `<div class="stack"><p class="eyebrow">Task ${n} of 5</p><h1>${title}</h1><p>${text}</p></div>
+    <textarea id="recall" aria-label="Words you remember" placeholder="Type the words, in any order, separated by spaces or commas"></textarea>
+    <div class="btn-row"><button class="btn" id="done">I've written all I can remember</button></div>`;
+  $('#recall').focus();
+  $('#done').addEventListener('click', () => cb(scoreRecall($('#recall').value, list)));
+}
+
+/* Task 1: learn words */
+function taskLearn(body, next){
+  intro(body,1,'Learn these words',`<p>You'll see 10 words, one at a time, for about 2 seconds each. Try to remember as many as you can. You'll be asked for them now, and again in a few minutes.</p>`,'Show the words', () => {
+    let k = 0; body.innerHTML = `<div class="word-card" id="wc" aria-live="polite"></div><p class="muted small" id="wn"></p>`;
+    const tick = () => {
+      if(k >= run.list.length){ clearInterval(t); cleanup=null;
+        recallForm(body,1,'Which words do you remember?','Write every word you can remember from the list.', run.list, hit => { run.scores.recallImm = hit.length; run.detail.imm = hit; next(); });
+        return; }
+      $('#wc').textContent = run.list[k]; $('#wn').textContent = `Word ${k+1} of 10`; k++;
+    };
+    tick(); const t = setInterval(tick, 2000); cleanup = () => clearInterval(t);
+  });
+}
+
+/* Task 2: reaction time */
+function taskRT(body, next){
+  intro(body,2,'Tap when it turns green',`<p>Rest your finger near the panel. When it turns green and says “Tap”, tap it as fast as you can. Don't tap early. There are 3 practice tries, then 12 that count.</p><p class="muted small">On a keyboard you can press the space bar instead.</p>`,'Start', () => {
+    const PRACTICE = 3, TRIALS = 12; let n = 0, times = [], early = 0, state = 'wait', t0 = 0, timer = null;
+    body.innerHTML = `<p class="muted" id="rt-lab" aria-live="polite"></p><button class="rt-pad" id="pad">Wait…</button>`;
+    const pad = $('#pad'), lab = $('#rt-lab');
+    const label = () => lab.textContent = n < PRACTICE ? `Practice ${n+1} of ${PRACTICE}` : `Try ${n-PRACTICE+1} of ${TRIALS}`;
+    const arm = () => { state='wait'; pad.className='rt-pad'; pad.textContent='Wait…'; label();
+      timer = setTimeout(() => { state='go'; pad.className='rt-pad go'; pad.textContent='Tap!'; t0 = performance.now(); }, 1200 + Math.random()*2000); };
+    const press = () => {
+      if(state==='wait'){ clearTimeout(timer); if(n>=PRACTICE) early++; state='early'; pad.className='rt-pad early'; pad.textContent='Too soon. Wait for green.'; setTimeout(arm, 1200); return; }
+      if(state!=='go') return;
+      const dt = performance.now() - t0; state='rest';
+      if(n >= PRACTICE) times.push(dt);
+      n++; pad.className='rt-pad'; pad.textContent = Math.round(dt)+' ms';
+      if(n >= PRACTICE+TRIALS){ const s = times.slice().sort((a,b)=>a-b); run.scores.rt = (s[5]+s[6])/2; run.detail.early = early; setTimeout(next, 700); }
+      else setTimeout(arm, 700);
+    };
+    pad.addEventListener('pointerdown', e => { e.preventDefault(); press(); });
+    const key = e => { if(e.code==='Space'){ e.preventDefault(); press(); } };
+    document.addEventListener('keydown', key);
+    cleanup = () => { clearTimeout(timer); document.removeEventListener('keydown', key); };
+    arm();
+  });
+}
+
+/* Task 3: symbol coding */
+function taskCoding(body, next){
+  const map = [0,1,2,3,4,5,6,7,8].sort(() => Math.random()-.5); // map[digit-1] = symbol index
+  const keyHTML = map.map((s,d)=>`<div>${sym(s)}<span>${d+1}</span></div>`).join('');
+  intro(body,3,'Match symbols to numbers',`<p>Each symbol has a number in the key. When a symbol appears, tap its number. Work as fast as you can without making mistakes. You have 90 seconds.</p><div class="key">${keyHTML}</div><p class="muted small">On a keyboard you can type the numbers.</p>`,'Start the 90 seconds', () => {
+    const DUR = 90000; let correct = 0, errors = 0, cur = -1, start = performance.now();
+    body.innerHTML = `<div class="timebar"><b id="tb"></b></div><div class="key">${keyHTML}</div><div class="target-sym" id="ts"></div>
+      <div class="pad">${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-d="${d}" aria-label="${d}">${d}</button>`).join('')}</div>`;
+    const nextSym = () => { let d; do{ d = 1+Math.floor(Math.random()*9); } while(d===cur); cur = d; $('#ts').innerHTML = sym(map[d-1]); };
+    const answer = d => { if(d===cur) correct++; else errors++; nextSym(); };
+    body.querySelector('.pad').addEventListener('pointerdown', e => { const b = e.target.closest('button'); if(b){ e.preventDefault(); answer(+b.dataset.d); } });
+    const key = e => { if(/^[1-9]$/.test(e.key)) answer(+e.key); };
+    document.addEventListener('keydown', key);
+    const iv = setInterval(() => {
+      const left = DUR - (performance.now()-start);
+      $('#tb').style.width = Math.max(0,left/DUR*100)+'%';
+      if(left <= 0){ cleanup(); cleanup=null; run.scores.coding = correct; run.detail.codingErrors = errors; next(); }
+    }, 100);
+    cleanup = () => { clearInterval(iv); document.removeEventListener('keydown', key); };
+    nextSym();
+  });
+}
+
+/* Task 4: trails */
+function taskTrails(body, next){
+  intro(body,4,'Connect the trail','<p>Tap the circles in order, switching between numbers and letters: 1, A, 2, B, 3, C, and so on until F. Go as quickly as you can. If you tap the wrong circle it flashes orange; just find the right one.</p>','Show the circles', () => {
+    const seq = ['1','A','2','B','3','C','4','D','5','E','6','F'];
+    let pts;
+    for(let tries=0; tries<200; tries++){
+      pts = []; let ok = true;
+      for(const _ of seq){ let p, a=0; do{ p = {x:9+Math.random()*82, y:9+Math.random()*82}; a++; } while(pts.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<17) && a<400); if(a>=400){ ok=false; break; } pts.push(p); }
+      if(ok) break;
+    }
+    body.innerHTML = `<p class="muted" id="tl" aria-live="polite">Next: 1</p><div class="trail" id="tr"><svg viewBox="0 0 100 100" preserveAspectRatio="none" id="tsvg"></svg>${seq.map((s,i)=>`<button data-i="${i}" style="left:${pts[i].x}%;top:${pts[i].y}%">${s}</button>`).join('')}</div>`;
+    let k = 0, errors = 0; const t0 = performance.now();
+    $('#tr').addEventListener('pointerdown', e => {
+      const b = e.target.closest('button'); if(!b) return; e.preventDefault();
+      const i = +b.dataset.i;
+      if(i===k){
+        b.classList.add('hit');
+        if(k>0) $('#tsvg').insertAdjacentHTML('beforeend', `<line x1="${pts[k-1].x}" y1="${pts[k-1].y}" x2="${pts[k].x}" y2="${pts[k].y}" stroke="var(--accent)" stroke-width=".8" vector-effect="non-scaling-stroke" style="stroke-width:3px"/>`);
+        k++;
+        if(k===seq.length){ run.scores.trails = (performance.now()-t0)/1000; run.detail.trailErrors = errors; $('#tl').textContent='Done'; setTimeout(next, 600); }
+        else $('#tl').textContent = 'Next: '+seq[k];
+      } else if(i>k){ errors++; b.classList.add('miss'); setTimeout(()=>b.classList.remove('miss'), 400); }
+    });
+  });
+}
+
+/* Task 5: delayed recall */
+function taskDelayed(body, next){
+  recallForm(body,5,'The words from the start','Without looking anywhere, write every word you can remember from the list you learned at the beginning.', run.list, hit => { run.scores.recallDel = hit.length; run.detail.del = hit; next(); });
+}
+
+function finish(){
+  const s = {id: Date.now().toString(36), date: new Date().toISOString(), ctx: run.ctx, excluded: run.atypical, autoExcluded: run.atypical, scores: run.scores, detail: run.detail, list: run.list};
+  sessions.push(s); save(); const r = run; run = null;
+  renderResult(s, r); show('result');
+}
+
+/* ---------- result ---------- */
+function renderResult(s){
+  const cmp = compare(sessions, s), sm = summary(sessions, s);
+  const el = $('#v-result');
+  const words = (hit, list) => `<div class="matched">${list.map(w=>`<span class="${hit.includes(w)?'':'no'}">${w}</span>`).join('')}</div>`;
+  el.innerHTML = `<div class="stack"><p class="eyebrow">Check-in saved · ${niceDate(s.date)}</p><h1>Here's how today went</h1></div>
+    <div class="notice ${KIND_CLASS[sm.kind]}"><p>${sm.text}</p></div>
+    ${s.excluded ? `<p class="notice">You mentioned something that can affect scores today, so this check-in is left out of your baseline. You can include it from the Your data page.</p>`:''}
+    ${!storageOK ? `<p class="notice urgent">This browser couldn't save the check-in. Copy a backup from the Your data page before closing.</p>`:''}
+    <div class="panel">${MEASURES.map(m => `<div class="metric"><div class="stack" style="gap:6px"><h3>${m.label}</h3><span class="chip ${cmp[m.key].status}">${STATUS_TEXT[cmp[m.key].status]}</span></div><div class="val">${fmt(m,s.scores[m.key])}<small>${m.unit}</small></div></div>`).join('')}</div>
+    <div class="panel stack"><h3>Words you remembered at the end</h3>${words(s.detail.del||[], s.list)}</div>
+    <div class="btn-row"><button class="btn" data-nav="trends">See trends</button><button class="btn ghost" data-nav="home">Done</button></div>
+    <p class="small muted">Next check-in: in about a month. Same time of day and same device give the fairest comparison.</p>`;
+}
+
+/* ---------- trends ---------- */
+function exampleData(){
+  const base = Date.now() - 7*30*864e5;
+  const rows = [[6,4,348,38,58],[7,6,331,43,49],[7,6,336,44,47],[8,7,322,46,45],[7,6,340,45,50],[7,5,329,44,46],[6,3,352,40,61]];
+  return rows.map((r,i)=>({id:'ex'+i, date:new Date(base+i*30*864e5).toISOString(), excluded:false, scores:{recallImm:r[0],recallDel:r[1],rt:r[2],coding:r[3],trails:r[4]}}));
+}
+function spark(m, list, latest){
+  const valid = sorted(list).filter(s=>!s.excluded);
+  const W=320,H=78,P=8;
+  if(valid.length < 1) return '';
+  const vals = valid.map(s=>s.scores[m.key]);
+  const cmp = compare(list, latest)[m.key];
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if(cmp.mean!=null){ lo = Math.min(lo, cmp.mean-cmp.thr); hi = Math.max(hi, cmp.mean+cmp.thr); }
+  if(hi-lo < 1e-6){ hi += 1; lo -= 1; }
+  // flip lower-is-better so that up always means better
+  const y = v => { let f = (v-lo)/(hi-lo); if(m.better==='low') f = 1-f; return H-P-f*(H-2*P); };
+  const x = i => valid.length===1 ? W/2 : P + i*(W-2*P)/(valid.length-1);
+  let band = '';
+  if(cmp.mean!=null){ const a=y(cmp.mean-cmp.thr), b=y(cmp.mean+cmp.thr); band = `<rect x="0" y="${Math.min(a,b)}" width="${W}" height="${Math.abs(a-b)}" fill="var(--band)"/>`; }
+  const path = vals.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  const li = valid.indexOf(latest);
+  const dots = vals.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="${i===li?5.5:3}" fill="${i===li?'var(--accent)':'var(--surface)'}" stroke="var(--accent)" stroke-width="2"/>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${m.label} across ${valid.length} check-ins">${band}<path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>${dots}</svg>`;
+}
+function renderTrends(){
+  const el = $('#v-trends');
+  const isEx = sessions.length === 0;
+  const list = isEx ? exampleData() : sessions;
+  const latest = sorted(list).filter(s=>!s.excluded).pop() || sorted(list).pop();
+  const sm = summary(list, latest);
+  const cmp = compare(list, latest);
+  const valid = sorted(list).filter(s=>!s.excluded);
+  el.innerHTML = `<div class="stack"><p class="eyebrow">${isEx?'<span class="example-tag">Example data</span>':'Compared with your own baseline'}</p><h1>Trends</h1>
+      ${isEx?'<p>This is what tracking looks like after seven monthly check-ins. Your own results will replace it after your first check-in.</p>':''}</div>
+    <div class="notice ${KIND_CLASS[sm.kind]}"><p>${sm.text}</p></div>
+    <div class="panel">${MEASURES.map(m=>`<div class="metric"><div class="stack" style="gap:6px"><h3>${m.label}</h3><span class="chip ${cmp[m.key].status}">${STATUS_TEXT[cmp[m.key].status]}</span></div><div class="val">${fmt(m,latest.scores[m.key])}<small>${m.unit}</small></div>${spark(m,list,latest)}</div>`).join('')}</div>
+    <p class="small muted">Higher on each chart is always better (reaction time and trail time are flipped). The shaded band is your usual range. ${valid.length?`${valid.length} check-in${valid.length>1?'s':''} from ${niceDate(valid[0].date)} to ${niceDate(valid[valid.length-1].date)}.`:''}</p>
+    ${isEx?'<div class="btn-row"><button class="btn" data-nav="home">Do your first check-in</button></div>':''}`;
+}
+
+/* ---------- data ---------- */
+function renderData(){
+  const list = sorted(sessions).reverse();
+  $('#sess-list').innerHTML = list.length ? list.map(s=>`<div class="sess"><div><strong>${niceDate(s.date)}</strong><div class="small muted">${s.excluded?'Left out of baseline':'In baseline'}${s.autoExcluded?' · off-day answers':''}</div></div><button class="btn ghost" data-tog="${s.id}">${s.excluded?'Include':'Leave out'}</button></div>`).join('')
+    : '<p class="muted">No check-ins yet.</p>';
+  $('#export-box').value = JSON.stringify({app:'mindline', version:1, exported:new Date().toISOString(), sessions}, null, 1);
+  $('#del-confirm').hidden = true; $('#copy-msg').hidden = true; $('#import-msg').hidden = true;
+}
+$('#sess-list').addEventListener('click', e => {
+  const b = e.target.closest('[data-tog]'); if(!b) return;
+  const s = sessions.find(x=>x.id===b.dataset.tog); if(s){ s.excluded = !s.excluded; save(); renderData(); }
+});
+$('#copy-btn').addEventListener('click', () => {
+  const box = $('#export-box'), msg = $('#copy-msg'); msg.hidden = false;
+  const fallback = () => { box.focus(); box.select(); msg.textContent = "Text selected. Use your device's Copy command, then paste it into a note or email to yourself."; };
+  try{ navigator.clipboard.writeText(box.value).then(()=>{ msg.textContent='Copied. Paste it into a note or email to yourself to keep it safe.'; }, fallback); }catch(err){ fallback(); }
+});
+$('#import-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader(); r.onload = () => { $('#import-box').value = r.result; }; r.readAsText(f);
+});
+$('#import-btn').addEventListener('click', () => {
+  const msg = $('#import-msg'); msg.hidden = false;
+  try{
+    const d = JSON.parse($('#import-box').value);
+    const incoming = Array.isArray(d) ? d : d.sessions;
+    if(!Array.isArray(incoming) || !incoming.every(s => s && s.date && s.scores)) throw new Error();
+    const ids = new Set(sessions.map(s=>s.id)); let added = 0;
+    incoming.forEach(s => { if(!ids.has(s.id)){ sessions.push(s); added++; } });
+    save(); renderData(); msg.hidden = false; msg.textContent = `Restored ${added} check-in${added===1?'':'s'}. Check-ins you already had were kept.`;
+  }catch(err){ msg.textContent = "That doesn't look like a Mindline backup. Paste the full text you copied, starting with { and ending with }."; }
+});
+$('#del-btn').addEventListener('click', () => { $('#del-confirm').hidden = false; });
+$('#del-no').addEventListener('click', () => { $('#del-confirm').hidden = true; });
+$('#del-yes').addEventListener('click', () => { sessions = []; save(); renderData(); });
+
+show('home');
+})();
+</script>
+
+</body>
+</html>
