@@ -1,0 +1,7 @@
+name = "mindline-proxy"
+main = "proxy.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://semanticarchitectures.github.io"
+ALLOWED_MODELS = "claude-sonnet-5-5,claude-haiku-5-5"
